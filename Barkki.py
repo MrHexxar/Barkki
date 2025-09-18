@@ -41,7 +41,7 @@ async def schedule(interaction: discord.Interaction, location: str, name: str, d
     helsinki = ZoneInfo('Europe/Helsinki')
     end_dt = end_dt.replace(tzinfo=helsinki)
     # Calculate start date (8:00 AM same day)
-    start_dt = start_dt.replace(hour=8, minute=0)
+    start_dt = end_dt.replace(hour=8, minute=0)
     # Create the event
     event = await interaction.guild.create_scheduled_event( # type=ignore
         name=name,
