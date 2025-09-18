@@ -31,19 +31,38 @@ async def woof(interaction: discord.Interaction):
 
 # Schedule command
 @bot.tree.command(name="schedule", description="Schedule a new event")
-@discord.app_commands.describe(location="Location", name="Name", description="Misc information", end="End date/time (DD-MM-YYYY)", )
-
+@discord.app_commands.describe(location="Location", name="Name", description="Misc information", end="End date/time (DD-MM-YYYY or DD.MM.YYYY)")
 async def schedule(interaction: discord.Interaction, location: str, name: str, description: str, end: str):
+    date_formats = ["%d-%m-%Y", "%d.%m.%Y"]
+    for fmt in date_formats:
+        try:
+            end_dt = datetime.strptime(end, fmt)
+            break
+        except ValueError:
+            continue
+    else:
+        await interaction.response.send_message(
+            "Invalid date! Please use DD-MM-YYYY or DD.MM.YYYY"
+        )
+        return
+
     # Parse end date
-    end_dt = datetime.strptime(end, "%d-%m-%Y")
     end_dt = end_dt.replace(hour=23, minute=59)
-    # Set timezone to UTC+2
-    helsinki = ZoneInfo('Europe/Helsinki')
+
+    # Set timezone to EEST
+    try:
+        helsinki = ZoneInfo("Europe/Helsinki")
+    except Exception as e:
+        await interaction.response.send_message(
+            f"Error loading timezone: {e}"
+        )
+        return
+
     end_dt = end_dt.replace(tzinfo=helsinki)
     # Calculate start date (8:00 AM same day)
     start_dt = end_dt.replace(hour=8, minute=0)
     # Create the event
-    event = await interaction.guild.create_scheduled_event( # type=ignore
+    event = await interaction.guild.create_scheduled_event( # type: ignore
         name=name,
         description=description,
         start_time=start_dt,
