@@ -81,12 +81,15 @@ async def schedule(interaction: discord.Interaction, location: str, name: str, d
 async def chosen(interaction: discord.Interaction, role: str):
     # Creating list of members
     guild = interaction.guild
+    target_role = discord.utils.get(guild.roles, name=role)
+
     # Removes bots and members without the specified role
     guild_members = [member async for member in guild.fetch_members()]
     if role is None:
         guild_members = [member for member in guild_members if not member.bot]
     else:
-        guild_members = [member for member in guild_members if not member.bot and role in member.roles]
+        guild_members = [member for member in guild_members if not member.bot and target_role in member.roles]
+
     # Choose one randomly
     chosen = random.choice(guild_members)
     # Send the chosen one a message
