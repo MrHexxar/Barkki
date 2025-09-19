@@ -4,6 +4,7 @@ import random
 from discord.ext import commands
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
+from typing import Optional
 from dotenv import load_dotenv
 
 # Setup
@@ -78,7 +79,7 @@ async def schedule(interaction: discord.Interaction, location: str, name: str, d
 # Chosen command
 @bot.tree.command(name="chosen", description="Sniffs out the true chosen")
 @discord.app_commands.describe(role="Role to choose from (optional)")
-async def chosen(interaction: discord.Interaction, role: str):
+async def chosen(interaction: discord.Interaction, role: Optional[str]):
     # Creating list of members
     guild = interaction.guild
     target_role = discord.utils.get(guild.roles, name=role)
