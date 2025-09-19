@@ -1,15 +1,16 @@
 import discord
+import os
+import random
 from discord.ext import commands
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
-import os
 from dotenv import load_dotenv
 
 # Setup
 load_dotenv()
 
 TOKEN = os.getenv("DISCORD_TOKEN")
-intents = discord.Intents.default()
+intents = discord.Intents.all()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -72,7 +73,25 @@ async def schedule(interaction: discord.Interaction, location: str, name: str, d
         location=location
     )
     # Confirm to user
-    await interaction.response.send_message(f"Event {event.name} scheduled until {end}")
+    await interaction.response.send_message(f'Event "{event.name}" scheduled until {end}')
+
+# Chosen command
+@bot.tree.command(name="chosen", description="Sniffs out the true chosen")
+@discord.app_commands.describe(role="Role to choose from (optional)")
+async def chosen(interaction: discord.Interaction, role: str):
+    # Creating list of members
+    guild = interaction.guild
+    # Removes bots and members without the specified role
+    guild_members = [member async for member in guild.fetch_members()]
+    if role is None:
+        guild_members = [member for member in guild_members if not member.bot]
+    else:
+        guild_members = [member for member in guild_members if not member.bot and role in member.roles]
+    # Choose one randomly
+    chosen = random.choice(guild_members)
+    # Send the chosen one a message
+    await interaction.response.send_message(f"The great Barkki has chosen thee {chosen.mention}")
+    await chosen.send("You are chosen by Barkki!")
 
 # Run the bot
 bot.run(TOKEN)
