@@ -1,8 +1,7 @@
 """
 general.py - Basic commands that make Barkki feel alive.
 
-This cog provides general utility commands like `/woof` and `/help`. 
-Mostly harmless, but occasionally will make you smile (or groan).
+This cog provides general utility commands like `/woof` and `/help`.
 """
 
 import discord
@@ -15,7 +14,7 @@ class GeneralCog(commands.Cog):
     General utility cog.
 
     Contains simple, non-event-related commands. 
-    Currently includes:
+    Currently, includes:
     - /woof: a happy doggo sound
     - /help: instructions for using other commands
     """
@@ -36,10 +35,6 @@ class GeneralCog(commands.Cog):
 
         Args:
             interaction: The Discord interaction that triggered the command.
-
-        Notes:
-            - Truly the height of sophistication.
-            - Users may request multiple woofs; your server may become a kennel.
         """
         await interaction.response.send_message("Woof!")
 
@@ -50,10 +45,6 @@ class GeneralCog(commands.Cog):
 
         Args:
             interaction: The Discord interaction that triggered the command.
-
-        Notes:
-            - Clearly written for humans who can't figure out `/woof`.
-            - Future-proof for more commands; just expand the string.
         """
         help_text = (
             "Here are the available commands:\n"
@@ -73,11 +64,8 @@ class GeneralCog(commands.Cog):
 async def setup(bot: commands.Bot) -> None:
     """
     Async entry point for loading this cog.
-
+    
     Args:
         bot: The main discord.py Bot instance.
-
-    Notes:
-        - Yes, `setup` must be async. Why? Because fuck you, that's why.
     """
     await bot.add_cog(GeneralCog(bot))

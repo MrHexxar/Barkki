@@ -13,13 +13,13 @@ from utils.config import Config
 import importlib
 import pkgutil
 
-
 CONFIG = Config()
 
 intents = discord.Intents.all()
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
+
 
 async def load_command_modules():
     """
@@ -41,6 +41,7 @@ async def load_command_modules():
         elif hasattr(module, "Cog"):
             await bot.add_cog(module.Cog(bot))
 
+
 @bot.event
 async def on_ready():
     """
@@ -58,6 +59,7 @@ async def on_ready():
         print(f"Synced {len(synced)} commands")
     except Exception as e:
         print(f"Failed to sync commands: {e}")
+
 
 def create_and_run_bot():
     bot.run(CONFIG.token)

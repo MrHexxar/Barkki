@@ -3,13 +3,6 @@ events.py -- Cog for scheduling Discord events.
 
 This cog provides the `/schedule` slash command, which lets users
 create scheduled events in the Discord server with flexible date parsing.
-
-Highlights:
-- Accepts start and/or end times in formats like `DD-MM-YYYY` or `HH:MM DD.MM.YYYY`.
-- Defaults to "lazy human" mode. If you don’t provide times, it just schedules
-  tomorrow from 08:00 to 23:59.
-- Handles timezones (defaults to Europe/Helsinki, we love Finland).
-- Wraps everything in polite error messages instead of stack traces in chat.
 """
 
 import os
@@ -159,8 +152,5 @@ async def setup(bot: commands.Bot) -> None:
 
     Args:
         bot: The main discord.py Bot instance.
-
-    Notes:
-        - Yes, `setup` must be async. Why? Because fuck you, that's why.
     """
     await bot.add_cog(EventsCog(bot, tz_name=os.getenv("TIMEZONE")))

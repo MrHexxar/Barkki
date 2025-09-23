@@ -1,10 +1,7 @@
 """
 randomizer.py -- Pick the lucky (or unlucky) soul.
 
-This cog provides commands that involve randomness. Currently just `/chosen`:
-- Selects a member from the guild (optionally filtered by role)
-- Excludes bots because yes, bots don’t get a say
-- Randomly assigns fate with zero remorse
+This cog provides commands that involve randomness.
 """
 
 import discord
@@ -40,11 +37,6 @@ class RandomizerCog(commands.Cog):
         Args:
             interaction: The Discord interaction that triggered the command.
             role: Optional role to restrict the pool of eligible members.
-
-        Notes:
-            - Bots are excluded from selection because they don’t deserve it.
-            - Requires `members` intent to fetch the full member list.
-            - If no eligible members exist, politely informs the user.
         """
         guild: discord.Guild = interaction.guild
         target_role: Optional[discord.Role] = discord.utils.get(guild.roles, name=role) if role else None
@@ -71,8 +63,5 @@ async def setup(bot: commands.Bot) -> None:
 
     Args:
         bot: The main discord.py Bot instance.
-
-    Notes:
-        - Yes, `setup` must be async. Why? Because fuck you, that's why.
     """
     await bot.add_cog(RandomizerCog(bot))

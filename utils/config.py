@@ -13,7 +13,7 @@ class Config:
     """
     Holds configuration for the bot.
 
-    Currently wraps environment variables. Future-proof for fancy config files should we ever care.
+    Currently, wraps environment variables. Future-proof for fancy config files should the need arise.
     """
 
     def __init__(self) -> None:

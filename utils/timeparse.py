@@ -2,7 +2,7 @@
 timeparse.py -- Parse human dates without losing your mind.
 
 Provides a tiny utility to parse user-provided date strings into timezone-aware
-datetime objects. Accepts multiple formats because humans are lazy and inconsistent.
+datetime objects.
 """
 
 from datetime import datetime, timedelta
@@ -21,11 +21,6 @@ def parse_date_with_formats(s: str, tz_name: str) -> Optional[datetime]:
 
     Returns:
         datetime object with tzinfo if parsing succeeds, else None.
-
-    Notes:
-        - Loops over allowed DATE_FORMATS until one works.
-        - If nothing works, returns None and leaves the human to suffer.
-        - We slap the timezone on afterward because Discord is picky.
     """
     for fmt in DATE_FORMATS:
         try:
