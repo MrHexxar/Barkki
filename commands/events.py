@@ -13,13 +13,13 @@ Highlights:
 """
 
 import os
-from datetime import timedelta, datetime
+from datetime import datetime
 
 import discord
 from discord.ext import commands
 from discord import app_commands, PrivacyLevel
 from typing import Optional
-from utils.timeparse import parse_date_with_formats, default_start_end
+from utils.timeparse import parse_date_with_formats
 from zoneinfo import ZoneInfo
 
 async def create_event(
@@ -84,7 +84,7 @@ class EventsCog(commands.Cog):
         dt = parse_date_with_formats(s, self.tz_name)
         if dt is None:
             await interaction.response.send_message(
-                f"{kind.capitalize()} date is invalid. Use either HH:MM DD-MM-YYYY or HH:MM DD.MM.YYYY."
+                f"{kind.capitalize()} date is invalid. Use HH:MM DD.MM.YYYY."
             )
         return dt
 
@@ -111,8 +111,8 @@ class EventsCog(commands.Cog):
         location="Location",
         name="Name",
         description="Description",
-        end="End date/time (optional)",
-        start="Start date/time (optional)"
+        start="Start date/time",
+        end="End date/time"
     )
     async def schedule(
             self,
@@ -120,8 +120,8 @@ class EventsCog(commands.Cog):
             location: str,
             name: str,
             description: str,
-            end: Optional[str] = None,
-            start: Optional[str] = None
+            start: str,
+            end: str
     ) -> None:
         """
         Slash command: Schedule a Discord server event.
@@ -133,28 +133,17 @@ class EventsCog(commands.Cog):
             location: Where the event takes place.
             name: Event name.
             description: Event description.
-            end: Optional end datetime string.
-            start: Optional start datetime string.
+            start: Start datetime string.
+            end: End datetime string.
         """
-        start_dt, end_dt = default_start_end(self.tz_name)
-
         # parse user provided dates
-        if start:
-            parsed_start = await self._parse_or_reply(interaction, start, "start")
-            if not parsed_start:
-                return
-            start_dt = parsed_start
-        if end:
-            parsed_end = await self._parse_or_reply(interaction, end, "end")
-            if not parsed_end:
-                return
-            end_dt = parsed_end
+        parsed_start = await self._parse_or_reply(interaction, start, "start")
+        start_dt = parsed_start
+        parsed_end = await self._parse_or_reply(interaction, end, "end")
+        end_dt = parsed_end
 
-        # fill missing dates if only one is provided
-        if end and not start:
-            start_dt = datetime.now(ZoneInfo(self.tz_name)) + timedelta(minutes=15)
-        if start and not end:
-            end_dt = start_dt.replace(hour=23, minute=59)
+        if end_dt is None or start_dt is None:
+            return
 
         start_dt = start_dt.replace(tzinfo=ZoneInfo(self.tz_name))
         end_dt = end_dt.replace(tzinfo=ZoneInfo(self.tz_name))
