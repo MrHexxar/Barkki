@@ -5,11 +5,11 @@ Provides a tiny utility to parse user-provided date strings into timezone-aware
 datetime objects. Accepts multiple formats because humans are lazy and inconsistent.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
-from typing import Optional
+from typing import Optional, Tuple
 
-DATE_FORMATS = ["%d-%m-%Y", "%H:%M %d.%m.%Y"]
+DATE_FORMATS = ["%H:%M %d-%m-%Y", "%H:%M %d.%m.%Y"]
 
 
 def parse_date_with_formats(s: str, tz_name: str) -> Optional[datetime]:
@@ -37,3 +37,17 @@ def parse_date_with_formats(s: str, tz_name: str) -> Optional[datetime]:
             continue
     # Nothing worked. Time to cry.
     return None
+
+def default_start_end(tz_name: str) -> Tuple[datetime, datetime]:
+    """
+    Compute default start (08:00 tomorrow) and end (23:59 tomorrow) datetimes,
+    making sure the start is always in the future.
+    """
+    now = datetime.now(ZoneInfo(tz_name))
+    start = now.replace(hour=8, minute=0, second=0, microsecond=0) + timedelta(days=1)
+    if start <= now:
+        # Execution at 23:59? Push to the day after
+        start += timedelta(days=1)
+
+    end = start.replace(hour=23, minute=59)
+    return start, end

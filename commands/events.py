@@ -13,12 +13,39 @@ Highlights:
 """
 
 import os
+from datetime import timedelta, datetime
+
 import discord
 from discord.ext import commands
 from discord import app_commands, PrivacyLevel
 from typing import Optional
-from utils.timeparse import parse_date_with_formats
+from utils.timeparse import parse_date_with_formats, default_start_end
 from zoneinfo import ZoneInfo
+
+async def create_event(
+        interaction: discord.Interaction,
+        name: str,
+        description: str,
+        start: datetime,
+        end: datetime,
+        location: str,
+) -> None:
+    """Create the Discord scheduled event, with snarky error messages."""
+    try:
+        event = await interaction.guild.create_scheduled_event(  # type: ignore
+            name=name,
+            description=description,
+            start_time=start,
+            end_time=end,
+            privacy_level=PrivacyLevel.guild_only,  # type: ignore
+            entity_type=discord.EntityType.external,
+            location=location,
+        )
+        await interaction.response.send_message(
+            f'"{event.name}" scheduled from {start.isoformat(timespec="minutes")} to {end.isoformat(timespec="minutes")} at {location}'
+        )
+    except Exception as e:
+        await interaction.response.send_message(f"Error creating event: {e}. Discord hates you and me.")
 
 
 class EventsCog(commands.Cog):
@@ -34,11 +61,50 @@ class EventsCog(commands.Cog):
         Initialize the EventsCog.
 
         Args:
-            bot: The main discord.py Bot instance. 
-            tz_name: Timezone name for parsing events (defaults to Helsinki because why not).
+            bot: The main discord.py Bot instance.
+            tz_name: Timezone name for all scheduled events.
         """
         self.bot = bot
         self.tz_name = tz_name
+
+    async def _parse_or_reply(
+            self, interaction: discord.Interaction, s: str, kind: str
+    ) -> Optional[datetime]:
+        """
+        Parse a date string, reply with an error if invalid.
+
+        Args:
+            interaction: Discord interaction object.
+            s: Date string from the user.
+            kind: 'start' or 'end', used in error messages.
+
+        Returns:
+            Parsed datetime with tzinfo or None if invalid.
+        """
+        dt = parse_date_with_formats(s, self.tz_name)
+        if dt is None:
+            await interaction.response.send_message(
+                f"{kind.capitalize()} date is invalid. Use either HH:MM DD-MM-YYYY or HH:MM DD.MM.YYYY."
+            )
+        return dt
+
+    async def _validate_start_end(
+        self, interaction: discord.Interaction, start_dt: datetime, end_dt: datetime
+    ) -> bool:
+        """
+        Validate that start and end are in the future and end > start.
+
+        Returns:
+            True if valid, False (and sends a Discord message) if invalid.
+        """
+        now = datetime.now(ZoneInfo(self.tz_name))
+        if start_dt <= now:
+            await interaction.response.send_message("Start time must be in the future.")
+            return False
+        if end_dt <= start_dt:
+            await interaction.response.send_message("End time must be after start time... how did you expect this to work?")
+            return False
+        return True
 
     @app_commands.command(name="schedule", description="Schedule a new event")
     @app_commands.describe(
@@ -60,86 +126,43 @@ class EventsCog(commands.Cog):
         """
         Slash command: Schedule a Discord server event.
 
+        Handles optional start/end dates with defaults and timezone.
+
         Args:
-            interaction: The command interaction from Discord. 
-            location: Where the event takes place (yes, text is fine, GPS not required).
+            interaction: The command interaction from Discord.
+            location: Where the event takes place.
             name: Event name.
             description: Event description.
-            end: Optional end datetime string in DD-MM-YYYY or HH:MM DD.MM.YYYY format.
-            start: Optional start datetime string in DD-MM-YYYY or HH:MM DD.MM.YYYY format.
-
-        Notes:
-            - If only `end` is provided, start defaults to 08:00 the day before.
-            - If only `start` is provided, end defaults to 23:59 the day after.
-            - If both are provided, we just trust the user knows what they’re doing.
+            end: Optional end datetime string.
+            start: Optional start datetime string.
         """
-        from datetime import datetime, timedelta  # lazy import inside the method, but fine for readability
+        start_dt, end_dt = default_start_end(self.tz_name)
 
-        helsinki = ZoneInfo(self.tz_name)
+        # parse user provided dates
+        if start:
+            parsed_start = await self._parse_or_reply(interaction, start, "start")
+            if not parsed_start:
+                return
+            start_dt = parsed_start
+        if end:
+            parsed_end = await self._parse_or_reply(interaction, end, "end")
+            if not parsed_end:
+                return
+            end_dt = parsed_end
 
-        # Default times if user is too lazy to specify anything
-        start_dt = datetime.now(helsinki).replace(hour=8, minute=0, second=0, microsecond=0) + timedelta(days=1)
-        end_dt = datetime.now(helsinki).replace(hour=23, minute=59, second=0, microsecond=0) + timedelta(days=1)
-
+        # fill missing dates if only one is provided
         if end and not start:
-            parsed = parse_date_with_formats(end, self.tz_name)
-            if parsed is None:
-                await interaction.response.send_message(
-                    "End date is not valid. Please use DD-MM-YYYY or HH:MM DD.MM.YYYY format."
-                )
-                return
-            end_dt = parsed
             start_dt = end_dt.replace(hour=8) - timedelta(days=1)
+        if start and not end:
+            end_dt = start_dt.replace(hour=23, minute=59)
 
-        elif start and not end:
-            parsed = parse_date_with_formats(start, self.tz_name)
-            if parsed is None:
-                await interaction.response.send_message(
-                    "Start date is not valid. Please use DD-MM-YYYY or HH:MM DD.MM.YYYY format."
-                )
-                return
-            start_dt = parsed
-            end_dt = start_dt.replace(hour=23, minute=59) + timedelta(days=1)
+        start_dt = start_dt.replace(tzinfo=ZoneInfo(self.tz_name))
+        end_dt = end_dt.replace(tzinfo=ZoneInfo(self.tz_name))
 
-        elif start and end:
-            parsed_s = parse_date_with_formats(start, self.tz_name)
-            parsed_e = parse_date_with_formats(end, self.tz_name)
+        if not await self._validate_start_end(interaction, start_dt, end_dt):
+            return
 
-            if parsed_s is None:
-                await interaction.response.send_message(
-                    "Start date is not valid. Please use DD-MM-YYYY or HH:MM DD.MM.YYYY format."
-                )
-                return
-            if parsed_e is None:
-                await interaction.response.send_message(
-                    "End date is not valid. Please use DD-MM-YYYY or HH:MM DD.MM.YYYY format."
-                )
-                return
-
-            start_dt = parsed_s
-            end_dt = parsed_e
-
-        # Ensure timezone information is always present (Discord LOVES doing UTC)
-        start_dt = start_dt.replace(tzinfo=helsinki)
-        end_dt = end_dt.replace(tzinfo=helsinki)
-
-        try:
-            event = await interaction.guild.create_scheduled_event(  # type: ignore
-                name=name,
-                description=description,
-                start_time=start_dt,
-                end_time=end_dt,
-                privacy_level=PrivacyLevel.guild_only, # type: ignore Fuck you, Linter
-                entity_type=discord.EntityType.external,
-                location=location
-            )
-            await interaction.response.send_message(
-                f'"{event.name}" scheduled for {start_dt.isoformat(timespec="minutes")} - {end_dt.isoformat(timespec="minutes")} at {location}'
-            )
-        except Exception as e:
-            # The classic "catch everything and just cry" approach.
-            await interaction.response.send_message(f"Error creating event: {e}")
-
+        await create_event(interaction, name, description, start_dt, end_dt, location)
 
 async def setup(bot: commands.Bot) -> None:
     """
