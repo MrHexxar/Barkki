@@ -152,7 +152,7 @@ class EventsCog(commands.Cog):
 
         # fill missing dates if only one is provided
         if end and not start:
-            start_dt = end_dt.replace(hour=8) - timedelta(days=1)
+            start_dt = datetime.now(ZoneInfo(self.tz_name)) + timedelta(minutes=15)
         if start and not end:
             end_dt = start_dt.replace(hour=23, minute=59)
 
