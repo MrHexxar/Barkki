@@ -1,7 +1,5 @@
 """
-general.py - Basic commands that make Barkki feel alive.
-
-This cog provides general utility commands like `/woof` and `/help`.
+general.py - Basic commands for Barkki bot.
 """
 
 import discord
@@ -10,62 +8,33 @@ from discord import app_commands
 
 
 class GeneralCog(commands.Cog):
-    """
-    General utility cog.
-
-    Contains simple, non-event-related commands. 
-    Currently, includes:
-    - /woof: a happy doggo sound
-    - /help: instructions for using other commands
-    """
-
+    # class constructor. Called when this class gets initialized.
     def __init__(self, bot: commands.Bot) -> None:
-        """
-        Initialize the GeneralCog.
+        self.bot = bot  # save bot instance for later use
 
-        Args:
-            bot: The main discord.py Bot instance.
-        """
-        self.bot = bot
-
+    # /woof command -> replies with "Woof!"
     @app_commands.command(name="woof", description="Get a happy woof")
     async def woof(self, interaction: discord.Interaction) -> None:
-        """
-        Sends a cheerful 'Woof!' message.
-
-        Args:
-            interaction: The Discord interaction that triggered the command.
-        """
         await interaction.response.send_message("Woof!")
 
+    # /help command -> shows a help text with usage instructions
     @app_commands.command(name="help", description="Detailed instructions for using commands")
     async def help(self, interaction: discord.Interaction) -> None:
-        """
-        Sends a help message listing all available commands.
-
-        Args:
-            interaction: The Discord interaction that triggered the command.
-        """
         help_text = (
             "Here are the available commands:\n"
             "/woof - Get a happy woof\n\n"
-            "/schedule - Schedule an event. The start and end will default to a relevant time at 08:00 for start and 23:59 for end\n"
+            "/schedule - Schedule an event. Start defaults to 08:00, end to 23:59\n"
             "- <location> - Location of the event\n"
             "- <name> - Name of the event\n"
-            "- <description> - Description for the event\n"
-            "- <end date/time> (optional) - When the event starts : DD-MM-YYYY or HH:MM DD.MM.YYYY\n"
-            "- <start date/time> (optional) - When the event ends : DD-MM-YYYY or HH:MM DD.MM.YYYY\n\n"
-            "/chosen - Sniffs out the true chosen from all members or from a specified role\n"
-            "- <role> (optional) - Role from which to pick the chosen"
+            "- <description> - Event description\n"
+            "- <end date/time> - Format: DD-MM-YYYY or HH:MM DD.MM.YYYY\n"
+            "- <start date/time> - Same format as end\n\n"
+            "/chosen - Pick a random member (or from a role)\n"
+            "- <role> (optional) - Restrict to a role"
         )
         await interaction.response.send_message(help_text)
 
 
+# Function to load this Cog into the bot
 async def setup(bot: commands.Bot) -> None:
-    """
-    Async entry point for loading this cog.
-    
-    Args:
-        bot: The main discord.py Bot instance.
-    """
     await bot.add_cog(GeneralCog(bot))

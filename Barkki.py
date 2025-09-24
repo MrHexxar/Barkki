@@ -1,10 +1,5 @@
 """
 Barkki.py -- Main entry point for Barkki.
-
-Handles:
-- Bot initialization with proper intents
-- Dynamic cog loading
-- Bot startup and logging
 """
 
 import discord
@@ -13,47 +8,37 @@ from utils.config import Config
 import importlib
 import pkgutil
 
+# Load config (like bot token and timezone) from environment
 CONFIG = Config()
 
+# Tell Discord what kind of events/messages the bot should receive
 intents = discord.Intents.all()
-intents.message_content = True
+intents.message_content = True  # allows reading normal messages
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 
 async def load_command_modules():
-    """
-    Dynamically load all cogs in the 'commands' package.
-
-    Looks for modules with either:
-    - an async `setup(bot)` function
-    - or a `Cog` subclass to register manually.
-
-    Notes:
-        - If a module has neither, we just ignore it.
-    """
+    # Dynamically load all command files inside "commands/" folder
     import commands as commands_pkg
     for finder, name, ispkg in pkgutil.iter_modules(commands_pkg.__path__):
         module_name = f"commands.{name}"
         module = importlib.import_module(module_name)
+
+        # If the module has a setup() function, use it
         if hasattr(module, "setup"):
             await module.setup(bot)
+        # Otherwise, if it just has a Cog class, add that directly
         elif hasattr(module, "Cog"):
             await bot.add_cog(module.Cog(bot))
 
 
 @bot.event
 async def on_ready():
-    """
-    Event fired when the bot is ready.
-
-    Responsibilities:
-        - Load all command modules (cogs)
-        - Sync slash commands with Discord
-        - Print info about successful login
-    """
+    # This runs once when the bot connects successfully
     print(f"Logged in as {bot.user} ({bot.user.id})")
     try:
+        # Load all cogs and sync slash commands with Discord
         await load_command_modules()
         synced = await bot.tree.sync()
         print(f"Synced {len(synced)} commands")
@@ -62,8 +47,10 @@ async def on_ready():
 
 
 def create_and_run_bot():
+    # Start the bot (blocking call, it keeps running until stopped)
     bot.run(CONFIG.token)
 
 
+# Run the bot if this file is run directly (python Barkki.py)
 if __name__ == "__main__":
     create_and_run_bot()

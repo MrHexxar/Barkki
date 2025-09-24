@@ -1,37 +1,38 @@
 """
-config.py -- Tiny config handler because humans forget environment variables.
+config.py -- Loads settings for Barkki bot.
 
-Loads essential settings from the environment:
-- DISCORD_TOKEN: required for Barkki to log in.
-- TIMEZONE: optional, defaults to Europe/Helsinki.
+This file takes care of reading configuration values
+(like your bot token and timezone) from environment variables.
 """
 
 import os
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # lets us read a .env file for settings
 
 class Config:
     """
-    Holds configuration for the bot.
+    Configuration wrapper for the bot.
 
-    Currently, wraps environment variables. Future-proof for fancy config files should the need arise.
+    For now, it only pulls values from environment variables.
+    Later, it could be expanded to read from files or databases.
     """
 
     def __init__(self) -> None:
-        """
-        Initialize the Config object.
-
-        Raises:
-            RuntimeError: If DISCORD_TOKEN is missing, because Barkki can’t work without it.
-
-        Attributes:
-            token (str): Discord bot token from environment.
-            timezone (str): Timezone name, defaults to "Europe/Helsinki".
-        """
+        # Load variables from .env file into environment (if present)
         load_dotenv()
+
+        # Try to grab the bot token from environment
+        # If it's not there, raise an error
         self.token: str = os.getenv("DISCORD_TOKEN") or self._missing_token()
+
+        # Get the timezone; default to Helsinki if not set
         self.timezone: str = os.getenv("TIMEZONE", "Europe/Helsinki")
 
     @staticmethod
     def _missing_token() -> str:
-        """Raise an exception if DISCORD_TOKEN is missing."""
+        """
+        Called when DISCORD_TOKEN is missing.
+
+        Instead of returning a fake token, it raises an error
+        because the bot literally cannot work without it.
+        """
         raise RuntimeError("DISCORD_TOKEN missing in environment. Barkki can’t live like this.")
