@@ -37,6 +37,7 @@ async def load_command_modules():
 async def on_ready():
     # This runs once when the bot connects successfully
     print(f"Logged in as {bot.user} ({bot.user.id})")
+    await bot.change_presence(status=discord.Status.online,activity=discord.Activity(name=f"Barking at Harkki", type=discord.ActivityType.custom))
     try:
         # Load all cogs and sync slash commands with Discord
         await load_command_modules()
